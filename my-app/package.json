@@ -1,5 +1,5 @@
 {
-<<<<<<< HEAD
+
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
@@ -41,8 +41,7 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3"
-  }
-=======
+  },
   "name": "backend",
   "version": "1.0.0",
   "description": "",
@@ -75,5 +74,4 @@
   "keywords": [],
   "type": "module"
   
->>>>>>> 50d92be790a1fabf4f72c8218c7ecf42f0cccf10
 }
