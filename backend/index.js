@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
 
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3001"],
+  origin: ["https://fusioninvest-7w6c-git-main-vivekkk004s-projects.vercel.app/", "https://fusioninvest-dash.vercel.app/signup"],
   credentials: true,
 };
 
