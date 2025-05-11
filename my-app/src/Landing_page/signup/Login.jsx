@@ -27,7 +27,7 @@ const Login = () => {
         if (response.data.success) {
           setIsLoggedIn(true);
           localStorage.setItem("authToken", response.data.authToken);
-          window.location.href = "http://localhost:3001/";
+          window.location.href = "https://fusioninvest-dash.vercel.app/signup";
         } else {
           toast.error(response.data.message);
         }
@@ -41,7 +41,7 @@ const Login = () => {
           const authToken = response.data.authToken;
           localStorage.setItem("authToken", authToken);
           setIsLoggedIn(true);
-          window.location.href = "http://localhost:3001/";
+          window.location.href = "https://fusioninvest-dash.vercel.app/signup";
         } else {
           toast.error("Login failed! Please check your credentials.");
         }
