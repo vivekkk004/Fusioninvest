@@ -1,49 +1,81 @@
 // index.js
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import reportWebVitals from './reportWebVitals';
-import Homepage from './Landing_page/home/Homepage';
-import Signup from './Landing_page/signup/Signup.jsx';
-import Login from './Landing_page/signup/Login.jsx';
-import EmailVerify from './Landing_page/signup/EmailVerify.jsx';
-import ResetPassword from './Landing_page/signup/ResetPassword.jsx';
-import AboutPage from './Landing_page/about/AboutPage';
-import ProductPage from './Landing_page/product/ProductPage.js';
-import PricingPage from './Landing_page/Pricing/Pricing.js';
-import SupportPage from './Landing_page/support/SupportPage';
-import Navbar from './Landing_page/Navbar.js';
-import Footer from './Landing_page/Footer';
-import NotFound from "./Landing_page/NotFound.js";
-import { AppContextProvider } from './context/Appcontext.jsx'; 
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+import express from 'express';
+import mongoose from 'mongoose';
+import passport from 'passport';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import bcrypt from 'bcryptjs';
+import cookieParser from 'cookie-parser';
 
-root.render(
-  <React.StrictMode>
-    <AppContextProvider>
-      <Router>
-        <Navbar />
-        <ToastContainer position="top-right" autoClose={3000} pauseOnHover />
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/email-verify" element={<EmailVerify />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/product" element={<ProductPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/support" element={<SupportPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Footer />
-      </Router>
-    </AppContextProvider>
-  </React.StrictMode>
-);
+import authRouter from './routes/authRouter.js';  // Default import
+import userModel from './model/userModel.js';
 
-reportWebVitals();
+import { HoldingsModel } from './model/HoldingsModel.js';
+import { PositionsModel } from './model/PositionsModel.js';
+import { OrdersModel } from './model/OrdersModel.js';
+import userRouter from './routes/userRouter.js';
+
+const app = express();
+const PORT = process.env.PORT || 3002;
+const uri = process.env.MONGO_URL;
+
+const corsOptions = {
+  origin: ["https://fusioninvest-7w6c-git-main-vivekkk004s-projects.vercel.app/", "https://fusioninvest-dash.vercel.app/signup"],
+  credentials: true,
+};
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors(corsOptions));
+
+// Add New User Route
+app.post("/addNewUser", async (req, res) => {
+  const salt = await bcrypt.genSalt(10);
+  const password = await bcrypt.hash(req.body.password, salt);
+  let addNewUser = new userModel({
+    email: req.body.email,
+    password: password,
+  });
+  await addNewUser.save();
+  res.send("User saved");
+});
+
+// API Endpoints
+app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
+
+app.get("/allHoldings", async (req, res) => {
+  let allHoldings = await HoldingsModel.find({});
+  res.json(allHoldings);
+});
+
+app.get("/allPositions", async (req, res) => {
+  let allPositions = await PositionsModel.find({});
+  res.json(allPositions);
+});
+
+app.post("/newOrder", async (req, res) => {
+  let newOrder = new OrdersModel({
+    name: req.body.name,
+    qty: req.body.qty,
+    price: req.body.price,
+    mode: req.body.mode,
+  });
+
+  newOrder.save();
+  res.send("Order saved!");
+});
+
+app.get("/", (req, res) => {
+  res.send("Backend is running");
+});
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  mongoose.connect(uri);
+  console.log("DB started!");
+});
