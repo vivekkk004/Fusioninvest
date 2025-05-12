@@ -1,12 +1,11 @@
 // src/pages/Auth/Login.jsx
 import React, { useContext, useState } from "react";
 import { AppContext } from '../../context/Appcontext';
-import axios from "axios";
+import axiosInstance from "../../context/axiosInstance";  // Import the configured axios instance
 import { toast } from "react-toastify";
 
 const Login = () => {
-  const { backendUrl, setIsLoggedIn } = useContext(AppContext);
-
+  const { setIsLoggedIn } = useContext(AppContext);
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,10 +14,8 @@ const Login = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     try {
-      axios.defaults.withCredentials = true;
-
       if (state === "Sign Up") {
-        const response = await axios.post(`${backendUrl}/api/auth/register`, {
+        const response = await axiosInstance.post("/auth/register", {
           name,
           email,
           password,
@@ -32,7 +29,7 @@ const Login = () => {
           toast.error(response.data.message);
         }
       } else {
-        const response = await axios.post(`${backendUrl}/api/auth/login`, {
+        const response = await axiosInstance.post("/auth/login", {
           email,
           password,
         });
