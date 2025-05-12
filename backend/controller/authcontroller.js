@@ -2,7 +2,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import userModel from '../model/userModel.js';
 import transporter from "../config/nodemailer.js";
-import crypto from 'crypto';
 
 // REGISTER
 export const register = async (req, res) => {
@@ -22,27 +21,27 @@ export const register = async (req, res) => {
     const user = new userModel({ name, email, password: hashedPassword });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Changed to 1 hour for security
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
+      secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      maxAge: 1 * 60 * 60 * 1000, // 1 hour
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
       subject: 'Welcome to Online Platform for Stock Trading & Investing',
-      html: `<p>Welcome to the trading website. Your account has been created with email ID: <strong>${email}</strong>.</p>`
+      text: `Welcome to the trading website. Your account has been created with email ID: ${email}.`
     };
 
     await transporter.sendMail(mailOptions);
 
     return res.json({ success: true });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Registration error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -59,15 +58,17 @@ export const login = async (req, res) => {
     const user = await userModel.findOne({ email });
 
     if (!user) {
+      console.log('User not found');
       return res.json({ success: false, message: "Invalid email" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password does not match');
       return res.json({ success: false, message: "Invalid password" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Changed to 1 hour for security
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -78,7 +79,7 @@ export const login = async (req, res) => {
 
     return res.json({ success: true });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Login error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -93,7 +94,7 @@ export const logout = async (req, res) => {
     });
     return res.json({ success: true, message: "Logged out" });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Logout error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -112,7 +113,7 @@ export const sendVerifyotp = async (req, res) => {
       return res.json({ success: false, message: "Account already verified" });
     }
 
-    const otp = crypto.randomBytes(3).toString('hex'); // Changed to a more secure OTP generation
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
 
     user.verifyOtp = otp;
     user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
@@ -122,14 +123,14 @@ export const sendVerifyotp = async (req, res) => {
       from: process.env.SENDER_EMAIL,
       to: user.email,
       subject: 'Account Verification OTP',
-      html: `<p>Your OTP is <strong>${otp}</strong>. Please verify your account using this OTP.</p>`
+      text: `Your OTP is ${otp}. Please verify your account using this OTP.`
     };
 
     await transporter.sendMail(mailOptions);
 
     return res.json({ success: true, message: "Verification OTP sent to your email." });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Send verify OTP error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -165,7 +166,7 @@ export const verifyEmail = async (req, res) => {
 
     return res.json({ success: true, message: "Email verified successfully." });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Verify email OTP error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -173,20 +174,9 @@ export const verifyEmail = async (req, res) => {
 // CHECK IF USER IS AUTHENTICATED
 export const isAuthenticated = async (req, res) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
-      return res.json({ success: false, message: "Not authenticated" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await userModel.findById(decoded.id);
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
     return res.json({ success: true });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Authentication check error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -205,7 +195,7 @@ export const sendResetOtp = async (req, res) => {
       return res.json({ success: false, message: "User not found" });
     }
 
-    const otp = crypto.randomBytes(3).toString('hex'); // More secure OTP generation
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.resetOtp = otp;
     user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
@@ -214,14 +204,14 @@ export const sendResetOtp = async (req, res) => {
       from: process.env.SENDER_EMAIL,
       to: user.email,
       subject: 'Password Reset OTP',
-      html: `<p>Your OTP for resetting your password is <strong>${otp}</strong>.</p>`
+      text: `Your OTP for resetting your password is ${otp}.`
     };
 
     await transporter.sendMail(mailOptions);
 
     return res.json({ success: true, message: "OTP sent to your email." });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Send reset OTP error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
@@ -240,6 +230,9 @@ export const resetPassword = async (req, res) => {
       return res.json({ success: false, message: "User not found" });
     }
 
+    console.log('User resetOtp in DB:', user.resetOtp);
+    console.log('OTP entered by user:', otp);
+
     const otpStr = String(otp).trim();
     if (!user.resetOtp || user.resetOtp !== otpStr) {
       return res.json({ success: false, message: "Invalid OTP" });
@@ -257,7 +250,7 @@ export const resetPassword = async (req, res) => {
 
     return res.json({ success: true, message: "Password has been reset successfully." });
   } catch (error) {
-    console.error(error); // log the error for debugging
+    console.error('Reset password error:', error);
     return res.json({ success: false, message: error.message });
   }
 };
